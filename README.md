@@ -31,13 +31,38 @@ freetoken-desktop
 
 Use **Install** in the application to download its engine, then download a model and start it. Local inference requires a supported NVIDIA GPU and driver; the engine and models need several gigabytes of free disk space.
 
-The [freetoken](https://snapcraft.io/freetoken) snap provides a separate CLI and background service; this desktop installs its own engine.
+To use the [freetoken](https://snapcraft.io/freetoken) snap's engine and models instead, configure the shared backend below before launching the desktop.
 
 ## Configure
 
 Configure the engine and models in the application. Settings, downloads and caches stay in `~/snap/freetoken-desktop/common` across snap updates.
 
-For models on removable storage:
+| Setting | Values | Default |
+| --- | --- | --- |
+| `backend` | `standalone`, `shared` | `standalone` |
+
+### Shared backend
+
+Run these commands as the desktop user. The shared backend requires snapd's experimental user-service support:
+
+```bash
+sudo snap set system experimental.user-daemons=true
+sudo snap install freetoken+cuda
+sudo snap set freetoken daemon.enabled=false
+sudo install -d -o "$(id -u)" -g "$(id -g)" -m 0700 \
+  /var/snap/freetoken/common/server /var/snap/freetoken/common/models
+sudo snap connect freetoken-desktop:server freetoken:server
+sudo snap connect freetoken-desktop:models freetoken:models
+snap start --user --enable freetoken.backend
+sudo snap set freetoken-desktop backend=shared
+freetoken-desktop
+```
+
+The desktop downloads models to `/var/snap/freetoken/common/models` and controls the shared engine. Use one desktop user for this setup. Engine updates come from `snap refresh freetoken`; the application's **Install** button is for standalone mode. Switch back with `sudo snap set freetoken-desktop backend=standalone`.
+
+The shared backend is experimental: the desktop's remote connection is supported, but its separate engine-installation screens still need checking. If it insists on installing another engine, report that screen instead of installing it.
+
+In standalone mode, for models on removable storage:
 
 ```bash
 sudo snap connect freetoken-desktop:removable-media
@@ -47,7 +72,7 @@ sudo snap connect freetoken-desktop:removable-media
 
 - Linux amd64 only. Host coding agents and tools cannot be launched from the confined application.
 - GPU kernels outside upstream's precompiled coverage may require a CUDA compiler, which is not included.
-- Update the desktop with `sudo snap refresh freetoken-desktop`; its built-in desktop updater cannot replace snap files. Engine updates remain available through the application.
+- Update the desktop with `sudo snap refresh freetoken-desktop`; its built-in desktop updater cannot replace snap files. In standalone mode, engine updates remain available through the application.
 - The desktop source and redistribution license are not provided with the upstream download; the recipe uses its official `.deb`.
 
 ## Build

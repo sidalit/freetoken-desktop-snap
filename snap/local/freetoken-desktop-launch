@@ -11,6 +11,42 @@ export FREETOKEN_BIN_DIR="$HOME/.local/bin"
 export FREETOKEN_ENV_DIR="$XDG_CONFIG_HOME/environment.d"
 export UV_PYTHON_INSTALL_DIR="$XDG_DATA_HOME/uv/python"
 export PATH="$FREETOKEN_BIN_DIR:$PATH"
-mkdir -p "$XDG_CONFIG_HOME" "$XDG_DATA_HOME" "$XDG_CACHE_HOME" "$FREETOKEN_MODELS_DIR"
+mkdir -p "$XDG_CONFIG_HOME" "$XDG_DATA_HOME" "$XDG_CACHE_HOME"
+
+if [[ $(snapctl get backend) == shared ]]; then
+    if ! snapctl is-connected server || ! snapctl is-connected models; then
+        echo 'Connect freetoken-desktop:server and freetoken-desktop:models to freetoken first.' >&2
+        exit 1
+    fi
+    if [[ ! -r "$SNAP_COMMON/server/url" || ! -r "$SNAP_COMMON/server/token" ]]; then
+        echo 'Start the shared backend with: snap start --user --enable freetoken.backend' >&2
+        exit 1
+    fi
+    FREETOKEN_DAEMON_URL=$(cat "$SNAP_COMMON/server/url")
+    FREETOKEN_DAEMON_TOKEN=$(cat "$SNAP_COMMON/server/token")
+    if [[ ! $FREETOKEN_DAEMON_URL =~ ^http://127\.0\.0\.1:([0-9]{1,5})$ ]]; then
+        echo 'The shared backend must use a loopback HTTP address.' >&2
+        exit 1
+    fi
+    port=$((10#${BASH_REMATCH[1]}))
+    if (( port < 1 || port > 65535 )) || [[ -z $FREETOKEN_DAEMON_TOKEN || $FREETOKEN_DAEMON_TOKEN =~ [[:space:]] ]]; then
+        echo 'The shared backend connection settings are invalid.' >&2
+        exit 1
+    fi
+    export FREETOKEN_DAEMON_URL FREETOKEN_DAEMON_TOKEN
+    export FREETOKEN_MODELS_DIR=/var/snap/freetoken/common/models
+    if [[ ! -d $FREETOKEN_MODELS_DIR || ! -w $FREETOKEN_MODELS_DIR ]]; then
+        echo 'The shared model directory must be writable by your user; see the shared backend setup in the README.' >&2
+        exit 1
+    fi
+    if ! curl --fail --silent --show-error --noproxy '*' --connect-timeout 2 --max-time 5 \
+        --output /dev/null "$FREETOKEN_DAEMON_URL/health"; then
+        echo 'The shared backend is unavailable. Run: snap start --user --enable freetoken.backend' >&2
+        exit 1
+    fi
+else
+    unset FREETOKEN_DAEMON_URL FREETOKEN_DAEMON_TOKEN
+    mkdir -p "$FREETOKEN_MODELS_DIR"
+fi
 
 exec "$SNAP/usr/bin/freetoken-desktop" "$@"

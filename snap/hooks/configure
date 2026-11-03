@@ -1,0 +1,10 @@
+#!/bin/sh
+set -eu
+
+case "$(snapctl get backend)" in
+    '') snapctl set backend=standalone ;;
+    standalone|shared) ;;
+    *) echo 'backend must be standalone or shared' >&2; exit 1 ;;
+esac
+
+mkdir -p "$SNAP_COMMON/server" "$SNAP_COMMON/models"

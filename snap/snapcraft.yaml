@@ -14,8 +14,8 @@ description: |
   ~/snap/freetoken-desktop/common and require several gigabytes of disk
   space. Local inference requires a supported NVIDIA GPU and driver.
 
-  The freetoken snap provides a separate CLI and background service;
-  this desktop installs its own engine.
+  The desktop can also share the freetoken snap's engine and models
+  instead of downloading a separate engine.
 
   This snap uses the official Linux desktop package. Desktop updates
   are delivered through the Snap Store.
@@ -32,6 +32,14 @@ platforms:
   amd64:
 
 plugs:
+  server:
+    interface: content
+    content: freetoken-server-v1
+    target: $SNAP_COMMON/server
+  models:
+    interface: content
+    content: freetoken-models-v1
+    target: $SNAP_COMMON/models
   shmem:
     interface: shared-memory
     private: true
@@ -54,6 +62,8 @@ apps:
       - network-bind
       - browser-support
       - shmem
+      - server
+      - models
 
 parts:
   freetoken-desktop:
