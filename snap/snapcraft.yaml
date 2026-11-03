@@ -1,0 +1,100 @@
+name: freetoken-desktop
+base: core24
+version: '0.2.0-beta.25'
+title: FreeToken Desktop
+icon: snap/gui/freetoken-desktop.png
+summary: Manage local language models with FreeToken Desktop
+description: |
+  FreeToken Desktop manages local language models, engine installation,
+  model downloads and an OpenAI-compatible inference server from a
+  native desktop application.
+
+  Open FreeToken Desktop and use Install to download its Python engine
+  and CUDA dependencies. Models and the engine are stored under
+  ~/snap/freetoken-desktop/common and require several gigabytes of disk
+  space. Local inference requires a supported NVIDIA GPU and driver.
+
+  The freetoken snap provides a separate CLI and background service;
+  this desktop installs its own engine.
+
+  This snap uses the official Linux desktop package. Desktop updates
+  are delivered through the Snap Store.
+grade: stable
+confinement: strict
+website: https://www.flashml.ai/
+source-code: https://github.com/sidalit/freetoken-desktop-snap
+issues:
+  - https://github.com/FlashML-org/FreeToken/issues
+  - https://github.com/sidalit/freetoken-desktop-snap/issues
+contact: https://github.com/sidalit/freetoken-desktop-snap/issues
+
+platforms:
+  amd64:
+
+plugs:
+  shmem:
+    interface: shared-memory
+    private: true
+
+apps:
+  freetoken-desktop:
+    command: bin/freetoken-desktop-launch
+    extensions: [gnome]
+    environment:
+      PATH: $SNAP/bin:$SNAP/usr/bin:$PATH
+      CC: $SNAP/bin/freetoken-cc
+      TRITON_LIBCUDA_PATH: /var/lib/snapd/lib/gl
+      UV_PYTHON_PREFERENCE: only-managed
+      PYTHONDONTWRITEBYTECODE: '1'
+      WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS: '1'
+    plugs:
+      - home
+      - removable-media
+      - network
+      - network-bind
+      - browser-support
+      - shmem
+
+parts:
+  freetoken-desktop:
+    plugin: dump
+    source: https://github.com/FlashML-org/FreeToken-Web/releases/download/v$SNAPCRAFT_PROJECT_VERSION/freetoken-desktop-amd64.deb
+    source-type: deb
+    prime:
+      - -usr/share/applications
+      - -usr/share/icons
+
+  runtime:
+    plugin: nil
+    stage-packages:
+      - curl
+      - util-linux
+      - libgomp1
+
+  # Triton compiles its CUDA driver launcher at runtime.
+  toolchain:
+    plugin: nil
+    stage-packages:
+      - gcc
+      - binutils
+      - libc6-dev
+      - libgcc-s1
+    override-build: |
+      craftctl default
+      mkdir -p "$CRAFT_PART_INSTALL/lib/x86_64-linux-gnu"
+      for file in libc.so.6 libm.so.6; do
+        ln -sf "/usr/lib/x86_64-linux-gnu/$file" "$CRAFT_PART_INSTALL/lib/x86_64-linux-gnu/$file"
+      done
+      ln -sf ../../usr/lib/x86_64-linux-gnu/libgcc_s.so.1 \
+        "$CRAFT_PART_INSTALL/lib/x86_64-linux-gnu/libgcc_s.so.1"
+      ln -sf /usr/lib64/ld-linux-x86-64.so.2 "$CRAFT_PART_INSTALL/lib/ld-linux-x86-64.so.2"
+    prime:
+      - -usr/share/man
+      - -usr/share/info
+      - -usr/share/locale
+
+  launcher:
+    plugin: dump
+    source: snap/local
+    organize:
+      '*': bin/

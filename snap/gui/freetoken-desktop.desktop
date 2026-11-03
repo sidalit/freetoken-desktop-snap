@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=FreeToken Desktop
+Comment=Manage local language models with FreeToken
+Exec=freetoken-desktop
+Icon=${SNAP}/meta/gui/freetoken-desktop.png
+Terminal=false
+Type=Application
+Categories=Utility;
+StartupWMClass=freetoken-desktop

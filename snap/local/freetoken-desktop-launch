@@ -1,0 +1,16 @@
+#!/bin/bash
+set -euo pipefail
+
+export HOME="$SNAP_USER_COMMON"
+export XDG_CONFIG_HOME="$HOME/.config"
+export XDG_DATA_HOME="$HOME/.local/share"
+export XDG_CACHE_HOME="$HOME/.cache"
+export FREETOKEN_HOME="$HOME/engine"
+export FREETOKEN_MODELS_DIR="$HOME/models"
+export FREETOKEN_BIN_DIR="$HOME/.local/bin"
+export FREETOKEN_ENV_DIR="$XDG_CONFIG_HOME/environment.d"
+export UV_PYTHON_INSTALL_DIR="$XDG_DATA_HOME/uv/python"
+export PATH="$FREETOKEN_BIN_DIR:$PATH"
+mkdir -p "$XDG_CONFIG_HOME" "$XDG_DATA_HOME" "$XDG_CACHE_HOME" "$FREETOKEN_MODELS_DIR"
+
+exec "$SNAP/usr/bin/freetoken-desktop" "$@"
