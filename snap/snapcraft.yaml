@@ -1,6 +1,6 @@
 name: freetoken-desktop
 base: core24
-version: '0.2.0-beta.25'
+version: '0.2.0-beta.26'
 title: FreeToken Desktop
 icon: snap/gui/freetoken-desktop.png
 summary: Manage local language models with FreeToken Desktop
